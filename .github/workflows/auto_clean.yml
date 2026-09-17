@@ -1,0 +1,33 @@
+name: Auto Clean VPN List
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Будет запускаться автоматически каждый час
+  workflow_dispatch:     # Кнопка для ручного запуска в панели управления
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Копируем репозиторий
+      uses: actions/checkout@v4
+
+    - name: Настраиваем Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Устанавливаем зависимость requests
+      run: pip install requests
+
+    - name: Запускаем очистку файла
+      run: python clean.py
+
+    - name: Сохраняем измененный текстовый файл в гит
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@://github.com"
+        git add cleaned_subscription.txt
+        git commit -m "Автоматическое обновление списка VPN" || exit 0
+        git push

@@ -2,7 +2,7 @@ name: Auto Clean VPN List
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Запуск каждый час
+    - cron: '0 * * * *'  # Запуск автоматически каждый час
   workflow_dispatch:     # Кнопка для ручного запуска
 
 jobs:
@@ -10,22 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Клонирование репозитория
+    - name: Клонирование вашего репозитория
       uses: actions/checkout@v4
 
-    - name: Настраиваем Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Скачивание оригинального файла через curl
+    # Скачиваем файл через официальное внутреннее API GitHub и сразу чистим от комментов (#)
+    - name: Скачивание и очистка списка подписки
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
-        curl -sL "https://githubusercontent.com" -o original.txt
+        gh api repos/igareck/vpn-configs-for-russia/contents/BLACK_SS+All_RUS.txt -q '.content' | base64 -d > downloaded.txt
+        
+        # Убираем все закомментированные '#' и пустые строки
+        grep -v '^[[:space:]]*#' downloaded.txt | grep -v '^[[:space:]]*$' > cleaned_subscription.txt
 
-    - name: Выполнение скрипта очистки
-      run: python clean.py
-
-    - name: Запись очищенного файла обратно в репозиторий
+    - name: Запись очищенного файла обратно в ваш репозиторий
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@://github.com"

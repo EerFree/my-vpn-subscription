@@ -1,34 +1,23 @@
-name: Auto Clean VPN List
+import os
 
-on:
-  schedule:
-    - cron: '0 * * * *'  # Запуск каждый час
-  workflow_dispatch:     # Кнопка для ручного запуска
+input_file = "original.txt"
+output_file = "cleaned_subscription.txt"
 
-jobs:
-  run-cleaner:
-    runs-on: ubuntu-latest
+if not os.path.exists(input_file):
+    print(f"Ошибка: Файл {input_file} не был скачан сервером!")
+    exit(1)
 
-    steps:
-    - name: Клонирование репозитория
-      uses: actions/checkout@v4
+with open(input_file, "r", encoding="utf-8") as f:
+    text = f.read()
 
-    - name: Настраиваем Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+# Делим текст на строки
+lines = text.splitlines()
 
-    - name: Скачивание оригинального файла через curl
-      run: |
-        curl -sL "https://githubusercontent.com" -o original.txt
+# Фильтруем: убираем пустые строки и строки, начинающиеся со знака #
+cleaned_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
 
-    - name: Выполнение скрипта очистки
-      run: python clean.py
+# Записываем результат
+with open(output_file, "w", encoding="utf-8") as f:
+    f.write("\n".join(cleaned_lines))
 
-    - name: Запись очищенного файла обратно в репозиторий
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@://github.com"
-        git add cleaned_subscription.txt
-        git commit -m "Автоматическое обновление подписки (удалены комментарии)" || exit 0
-        git push
+print(f"Успешно обработано! Сохранено строк: {len(cleaned_lines)}")

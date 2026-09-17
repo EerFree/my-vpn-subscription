@@ -2,8 +2,12 @@ name: Auto Clean VPN List
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Запуск автоматически каждый час
+    - cron: '0 * * * *'  # Запуск каждый час
   workflow_dispatch:     # Кнопка для ручного запуска
+
+# Явно разрешаем роботу изменять файлы в этом репозитории
+permissions:
+  contents: write
 
 jobs:
   run-cleaner:
@@ -13,7 +17,6 @@ jobs:
     - name: Клонирование вашего репозитория
       uses: actions/checkout@v4
 
-    # Скачиваем файл через официальное внутреннее API GitHub и сразу чистим от комментов (#)
     - name: Скачивание и очистка списка подписки
       env:
         GH_TOKEN: ${{ github.token }}
@@ -24,9 +27,13 @@ jobs:
         grep -v '^[[:space:]]*#' downloaded.txt | grep -v '^[[:space:]]*$' > cleaned_subscription.txt
 
     - name: Запись очищенного файла обратно в ваш репозиторий
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@://github.com"
         git add cleaned_subscription.txt
         git commit -m "Автоматическое обновление подписки (удалены комментарии)" || exit 0
-        git push
+        
+        # Используем встроенный токен для успешного пуша
+        git push "https://x-access-token:${GITHUB_TOKEN}@://github.com{{ github.repository }}.git" HEAD:main
